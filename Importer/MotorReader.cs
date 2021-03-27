@@ -10,16 +10,12 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
+using static Importer.Constants;
+
 namespace Importer
 {
     public class MotorReader
     {
-        private const int VecCount = 16;
-        private const int MaxBufferSize = 4096;
-
-        private const string Delimiter = "</ns:Statistik>";
-        private byte[] DelimiterBytes { get; } = Encoding.UTF8.GetBytes(Delimiter); 
-        
         private readonly ChannelWriter<ReaderResult> _resultChannel;
         
         public static Task ReadXmlFromStream(ChannelWriter<ReaderResult> resultChannel, Stream xmlStream) 
@@ -87,7 +83,7 @@ namespace Importer
             SequenceReader<byte> reader = new SequenceReader<byte>(sequence);
             while (true)
             {
-                if (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, DelimiterBytes))
+                if (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, EndingTagBytes))
                 {
                     PresentReaderResult(xmlEntry);
                 }
