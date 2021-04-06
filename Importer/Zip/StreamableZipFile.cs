@@ -26,7 +26,7 @@ namespace Importer.Zip
         }
 
         public Stream GetStream() 
-            => new DeflateStream(_data, CompressionMode.Decompress, true);
+            => new DeflateStream(_data, CompressionMode.Decompress, false);
 
         public void Dispose()
         {

@@ -17,7 +17,7 @@ namespace Importer.Cli
         public static MongoClientSettings CreateMongoClientSettings(string mongoClient, string? authString)
             => new MongoClientSettingsFactory(mongoClient, authString).CreateMongoClientSettings();
         
-        public static MongoClientSettings CreateMongoClientSettings(ImportOptions options) 
+        public static MongoClientSettings CreateMongoClientSettings(OutputConfig options) 
             => CreateMongoClientSettings(
                 options.Mongo ?? throw new ArgumentNullException(nameof(options), "Address to mongo need to be present"),
                 options.Auth);

@@ -7,7 +7,7 @@ namespace Importer.Cli.Extensions
 {
     public static class AssemblyExtensions
     {
-        public static IEnumerable<Type> GetTypesWithBaseOf<TType>(this Assembly assembly) 
-            => assembly.GetTypes().Where(x => x.BaseType == typeof(TType));
+        public static IEnumerable<Type> GetTypesOfInterface<TType>(this Assembly assembly) => 
+            assembly.GetTypes().Where(x => x.GetInterfaces().Any(t => t == typeof(TType)));
     }
 }

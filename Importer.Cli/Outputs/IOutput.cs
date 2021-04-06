@@ -1,11 +1,13 @@
 using System;
-using System.Threading.Channels;
-using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace Importer.Cli.Outputs
 {
     public interface IOutput : IDisposable
     {
-        Task Start(ChannelReader<ReaderResult> reader);
+        void Configure(OutputConfig config)
+        {
+        }
+        void Present(BsonDocument document);
     }
 }

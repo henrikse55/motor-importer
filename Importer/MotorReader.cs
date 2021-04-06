@@ -98,7 +98,6 @@ namespace Importer
         private void PresentReaderResult(ReadOnlySequence<byte> xmlEntry)
         {
             byte[] entryBuffer = xmlEntry.ToArray();
-            string text = Encoding.UTF8.GetString(entryBuffer);
             while (!_resultChannel.TryWrite(new ReaderResult(entryBuffer)))
             {
                 //spin...

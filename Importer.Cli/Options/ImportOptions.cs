@@ -1,4 +1,6 @@
+using System.IO;
 using Importer.Cli.Commands;
+using Importer.Cli.Outputs;
 
 namespace Importer.Cli.Options
 {
@@ -12,5 +14,6 @@ namespace Importer.Cli.Options
         public string? Mongo { get; set; }
 
         public bool IsRemoteFtp => DataSource?.StartsWith("ftp://") ?? false;
+        public FileInfo File => new FileInfo(DataSource!);
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using Importer.Zip;
 
 namespace Importer.Cli.Extensions
 {
@@ -8,16 +9,8 @@ namespace Importer.Cli.Extensions
     {
         public static bool IsZip(this FileInfo info)
         {
-            try
-            {
-                using Stream fileStream = info.OpenRead();
-                using ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Read);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            using FileStream contentStream = info.OpenRead();
+            return LocalHeader.FromStream(contentStream).IsValid;
         }
     }
 }

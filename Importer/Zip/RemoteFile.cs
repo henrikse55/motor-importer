@@ -1,16 +1,21 @@
 using System;
 using System.IO;
 using System.Net;
-using System.Threading.Tasks;
-using Importer.Extensions;
-using Importer.Zip;
 
-namespace Importer.Cli
+namespace Importer.Zip
 {
     public class RemoteFile : IDisposable
     {
         private readonly Uri _downloadUri;
         private StreamableZipFile _zipFile;
+
+        public static Stream GetRemoteFileAsStream(string uri)
+            => new RemoteFile(uri).GetStreamingFile();
+
+        public RemoteFile(string uri) : this(new Uri(uri))
+        {
+            
+        }
         
         public RemoteFile(Uri downloadUri)
         {

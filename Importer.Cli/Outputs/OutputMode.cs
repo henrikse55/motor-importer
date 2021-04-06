@@ -1,4 +1,4 @@
-namespace Importer.Cli
+namespace Importer.Cli.Outputs
 {
     public enum OutputMode
     {
