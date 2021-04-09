@@ -9,6 +9,7 @@ using Importer.Cli.Extensions;
 using Importer.Cli.Options;
 using Importer.Cli.Outputs;
 using Importer.Converters;
+using Importer.Readers;
 using Importer.Zip;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

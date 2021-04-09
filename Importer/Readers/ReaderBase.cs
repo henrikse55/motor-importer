@@ -1,28 +1,21 @@
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
+using Importer.Extensions;
 using Importer.Metrics.Counters;
 using Microsoft.Toolkit.HighPerformance.Buffers;
-using static Importer.Constants;
 
-namespace Importer
+namespace Importer.Readers
 {
-    public class MotorReader
+    public abstract class ReaderBase
     {
-        private readonly ChannelWriter<ReaderBatchResult> _resultChannel;
-        private readonly CancellationToken _cancellationToken;
+        protected readonly CancellationToken _cancellationToken;
 
-        public static Task ReadXmlFromStream(ChannelWriter<ReaderBatchResult> resultChannel, Stream xmlStream, CancellationToken token = default) 
-            => new MotorReader(resultChannel, token).Read(xmlStream);
-
-        public MotorReader(ChannelWriter<ReaderBatchResult> resultChannel, CancellationToken cancellationToken)
+        public ReaderBase(CancellationToken cancellationToken)
         {
-            _resultChannel = resultChannel;
             _cancellationToken = cancellationToken;
         }
 
@@ -59,7 +52,7 @@ namespace Importer
             }
             await writer.CompleteAsync();
         }
-        
+
         private async Task ReadPipe(PipeReader reader)
         {
             while (!_cancellationToken.IsCancellationRequested)
@@ -81,42 +74,38 @@ namespace Importer
             }
             await reader.CompleteAsync();
         }
-        
+
         private SequencePosition ScanForDelimiter(ReadOnlySequence<byte> sequence)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(sequence);
-            List<MemoryOwner<byte>> batchResults = new List<MemoryOwner<byte>>(250);
             while (true)
             {
-                if (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, EndingTagBytes))
+                if (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, Constants.EndingTagBytes))
                 {
-                    MemoryOwner<byte> memory = GetMemoryCopy(xmlEntry);
-                    batchResults.Add(memory);
+                    MemoryOwner<byte> memory = xmlEntry.CopyToMemoryOwner();
+                    PresentEntry(memory);
                 }
                 else
                 {
                     break;
                 }
             }
-            PresentReaderBatch(new ReaderBatchResult(batchResults));
+            ScanComplete();
             return reader.Position;
         }
 
-        private static MemoryOwner<byte> GetMemoryCopy(ReadOnlySequence<byte> xmlEntry)
+        /// <summary>
+        /// Invoked on each xml entry found
+        /// </summary>
+        protected virtual void PresentEntry(MemoryOwner<byte> entry)
         {
-            MemoryOwner<byte> memory = MemoryOwner<byte>.Allocate((int) xmlEntry.Length);
-            xmlEntry.CopyTo(memory.Span);
-            return memory;
         }
 
-        private void PresentReaderBatch(ReaderBatchResult batchResult)
+        /// <summary>
+        /// Invoked when no xml entries can be found
+        /// </summary>
+        protected virtual void ScanComplete()
         {
-            MotorPipeEventSource.Log.FoundEntries(batchResult.Batch.Count);
-            var task = _resultChannel.WriteAsync(batchResult, _cancellationToken);
-            if (!task.IsCompleted)
-            {
-                task.AsTask().Wait(_cancellationToken);
-            }
         }
     }
 }
