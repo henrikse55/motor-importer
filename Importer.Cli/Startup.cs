@@ -1,10 +1,9 @@
 using System;
 using System.CommandLine;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using Importer.Cli.Commands;
 using Importer.Cli.Extensions;
+using Importer.Metrics.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,6 +30,8 @@ namespace Importer.Cli
 
             services.AddCommandHandlers();
             services.AddOutputs();
+            
+            services.AddMetricServer();
         }
     }
 }

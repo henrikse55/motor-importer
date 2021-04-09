@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: "Importer metrics"
+    scrape_interval: 1s
+    
+    static_configs:
+      - targets: ["192.168.1.24:8080"]

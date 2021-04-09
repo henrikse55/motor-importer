@@ -2,14 +2,17 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Importer.Cli.Extensions;
 using Importer.Cli.Options;
+using Importer.Cli.Outputs;
+using Importer.Converters;
 using Importer.Zip;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Toolkit.HighPerformance.Buffers;
 using MongoDB.Bson;
 
 namespace Importer.Cli.Handlers
@@ -18,42 +21,54 @@ namespace Importer.Cli.Handlers
     {
         private readonly ILogger<ImportHandler> _logger;
         private readonly OutputResolver _outputResolver;
+        private readonly IHostApplicationLifetime _applicationLifetime;
+        private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
+        
         private ImportOptions? _options;
         
         public ImportHandler(
             ILogger<ImportHandler> logger,
-            OutputResolver outputResolver)
+            OutputResolver outputResolver, 
+            IHostApplicationLifetime applicationLifetime)
         {
             _logger = logger;
             _outputResolver = outputResolver;
+            _applicationLifetime = applicationLifetime;
+
+            applicationLifetime.ApplicationStopping.Register(() => _tokenSource.Cancel());
         }
 
         public async Task<int> InvokeAsync(ImportOptions options)
         {
-            ThreadPool.SetMinThreads(32, 64);
-            _options = options;
-            _outputResolver.Resolve(_options.Output).Configure(options);
+            VerifyOptions(options);
 
-            if (string.IsNullOrEmpty(options.DataSource))
-                throw new ArgumentNullException(nameof(options.DataSource));
+            Channel<ReaderBatchResult> channel = Channel.CreateUnbounded<ReaderBatchResult>();
             
-            _logger.LogInformation($"Will stream using source: {options.DataSource} | IsRemote: {options.IsRemoteFtp}");
-
-            Channel<ReaderResult> channel = Channel.CreateBounded<ReaderResult>(8000);
             Stream xmlStream = GetSourceStream();
-            Task readerTask = MotorReader.ReadXmlFromStream(channel, xmlStream);
+            Task readerTask = MotorReader.ReadXmlFromStream(channel, xmlStream, _tokenSource.Token);
 
-            await foreach (var result in channel.Reader.ReadAllAsync())
+            await foreach (var result in channel.Reader.ReadAllAsync(_tokenSource.Token))
             {
                 ThreadPool.QueueUserWorkItem(ProcessEntry, result, true);
             }
+            await readerTask;
 
             return 0;
         }
-        
+
+        private void VerifyOptions(ImportOptions options)
+        {
+            _options = options;
+
+            if (string.IsNullOrEmpty(options.DataSource))
+                throw new ArgumentNullException(nameof(options.DataSource));
+
+            _logger.LogInformation($"Will stream using source: {options.DataSource} | IsRemote: {options.IsRemoteFtp}");
+        }
+
         private Stream GetSourceStream()
         {
-            if (_options.IsRemoteFtp)
+            if (_options!.IsRemoteFtp)
                 return GetRemoteSourceStream();
 
             if (_options.File.IsZip())
@@ -62,29 +77,29 @@ namespace Importer.Cli.Handlers
             return _options.File.OpenRead();
         }
 
-        private void ProcessEntry(ReaderResult result)
+        private void ProcessEntry(ReaderBatchResult batchResult)
         {
-            string json = XmlConverter.ConvertToJson(result);
-            BsonDocument document = BsonDocument.Parse(json);
+            IOutput output = _outputResolver.Resolve(_options!.Output);
+            output.Configure(_options);
             
-            IdHash(result, document);
+            XmlConverter converter = new XmlConverter();
+            for (int index = 0; index < batchResult.Batch.Count; index++)
+            {
+                MemoryOwner<byte> owner = batchResult.Batch[index];
+                BsonDocument document = converter.ConvertToBson(owner);
 
-            var output = _outputResolver.Resolve(_options.Output);
-            output.Present(document);
-        }
-
-        private static void IdHash(ReaderResult result, BsonDocument document)
-        {
-            document["_id"] = Guid.NewGuid();
+                output.Present(document);
+                owner.Dispose();
+            }
         }
 
         private Stream GetRemoteSourceStream() 
-            => RemoteFile.GetRemoteFileAsStream(_options.DataSource);
+            => RemoteFile.GetRemoteFileAsStream(_options!.DataSource);
         
         private Stream GetStreamFromZip()
         {
             _logger.LogInformation("Opening as zip");
-            ZipArchive archive = new ZipArchive(_options.File.OpenRead(), ZipArchiveMode.Read);
+            ZipArchive archive = new ZipArchive(_options!.File.OpenRead(), ZipArchiveMode.Read);
             ZipArchiveEntry entry = archive.Entries.First();
             return entry.Open();
         }
