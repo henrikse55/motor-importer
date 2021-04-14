@@ -6,8 +6,40 @@ namespace Importer.Utility
 {
     public static class StringUtility
     {
+        /// <see cref="GetXmlWithoutNamespacesFromBytes"/>
+        [Obsolete("Use new implementation")]
         public static string RemoveNamespaceFromByteString(MemoryOwner<byte> content)
             => RemoveSubstringFromByteString(content, Constants.NameSpaceDelimiterBytes);
+        
+        public static string GetXmlWithoutNamespacesFromBytes(MemoryOwner<byte> content)
+            => RemoveNameSpaceWithoutIndexing(content, Constants.NameSpaceDelimiterBytes);
+        
+        private static string RemoveNameSpaceWithoutIndexing(MemoryOwner<byte> content, ReadOnlySpan<byte> delimiter)
+        {
+            using ArrayPoolBufferWriter<char> buffer = new ArrayPoolBufferWriter<char>(content.Length);
+
+            ReadOnlySpan<byte> rawContent = content.Span;
+            while (true)
+            {
+                int length = rawContent.IndexOf(delimiter);
+
+                if (length == -1)
+                    break;
+
+                ReadOnlySpan<byte> rawSlice = rawContent.Slice(0, length);
+
+                Span<char> bufferSlice = buffer.GetSpan(rawSlice.Length);
+                int count = Encoding.Default.GetChars(rawSlice, bufferSlice);
+                buffer.Advance(count);
+
+                rawContent = rawContent.Slice(length + delimiter.Length);
+            }
+
+            int result = Encoding.UTF8.GetChars(rawContent, buffer.GetSpan(rawContent.Length));
+            buffer.Advance(result);
+
+            return new string(buffer.WrittenSpan);
+        }
         
         private static string RemoveSubstringFromByteString(MemoryOwner<byte> content, ReadOnlySpan<byte> delimiter)
         {

@@ -16,7 +16,7 @@ namespace Importer.Converters
         private string PatchXmlData(ReadOnlySpan<byte> content)
         {
             using MemoryOwner<byte> fixedXml = ApplyXmlFix(content);
-            return StringUtility.RemoveNamespaceFromByteString(fixedXml);
+            return StringUtility.GetXmlWithoutNamespacesFromBytes(fixedXml);
         }
 
         private MemoryOwner<byte> ApplyXmlFix(ReadOnlySpan<byte> content)
