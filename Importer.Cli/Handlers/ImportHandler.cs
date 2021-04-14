@@ -13,7 +13,6 @@ using Importer.Readers;
 using Importer.Zip;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Toolkit.HighPerformance.Buffers;
 using MongoDB.Bson;
 
 namespace Importer.Cli.Handlers
@@ -46,14 +45,12 @@ namespace Importer.Cli.Handlers
             Channel<ReaderBatchResult> channel = Channel.CreateUnbounded<ReaderBatchResult>();
             
             Stream xmlStream = GetSourceStream();
-            Task readerTask = MotorReader.ReadXmlFromStream(channel, xmlStream, _tokenSource.Token);
+            Task reader = MotorReader.ReadXmlFromStream(channel, xmlStream, _tokenSource.Token);
+            Task readLoop = StartContentEnqueueLoop(channel);
 
-            await foreach (var result in channel.Reader.ReadAllAsync(_tokenSource.Token))
-            {
-                ThreadPool.QueueUserWorkItem(ProcessEntry, result, true);
-            }
-            await readerTask;
-
+            await Task.WhenAll(reader, readLoop);
+            
+            _logger.LogInformation($"Done parsing data, {channel.Reader.Count}");
             return 0;
         }
 
@@ -66,6 +63,29 @@ namespace Importer.Cli.Handlers
 
             _logger.LogInformation($"Will stream using source: {options.DataSource} | IsRemote: {options.IsRemoteFtp}");
         }
+        
+        private async Task StartContentEnqueueLoop(Channel<ReaderBatchResult> channel)
+        {
+            await foreach (var result in channel.Reader.ReadAllAsync(_tokenSource.Token))
+            {
+                ThreadPool.QueueUserWorkItem(ProcessEntry, result, true);
+            }
+        }
+        
+        private void ProcessEntry(ReaderBatchResult batchResult)
+        {
+            IOutput output = _outputResolver.Resolve(_options!.Output);
+            output.Configure(_options);
+            
+            XmlConverter converter = new XmlConverter();
+            foreach (var owner in batchResult.Batch)
+            {
+                BsonDocument document = converter.ConvertToBson(owner);
+            
+                output.Present(document);
+                owner.Dispose();
+            }
+        }
 
         private Stream GetSourceStream()
         {
@@ -76,22 +96,6 @@ namespace Importer.Cli.Handlers
                 return GetStreamFromZip();
 
             return _options.File.OpenRead();
-        }
-
-        private void ProcessEntry(ReaderBatchResult batchResult)
-        {
-            IOutput output = _outputResolver.Resolve(_options!.Output);
-            output.Configure(_options);
-            
-            XmlConverter converter = new XmlConverter();
-            for (int index = 0; index < batchResult.Batch.Count; index++)
-            {
-                MemoryOwner<byte> owner = batchResult.Batch[index];
-                BsonDocument document = converter.ConvertToBson(owner);
-
-                output.Present(document);
-                owner.Dispose();
-            }
         }
 
         private Stream GetRemoteSourceStream() 
