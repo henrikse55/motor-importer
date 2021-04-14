@@ -1,7 +1,5 @@
 using System;
-using System.Buffers;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.Schema;
 using Microsoft.Toolkit.HighPerformance.Buffers;
@@ -52,6 +50,8 @@ namespace Importer.Converters
             return document;
         }
 
+        //Could a non-recursive method be used here?
+        //Possibly using a stack?
         private void CopyContentToBson(string name, BsonDocument document, XmlReader reader)
         {
             reader.Read(); //Skip the root element
