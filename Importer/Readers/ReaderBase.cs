@@ -78,17 +78,10 @@ namespace Importer.Readers
         private SequencePosition ScanForDelimiter(ReadOnlySequence<byte> sequence)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(sequence);
-            while (true)
+            while (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, Constants.EndingTagBytes))
             {
-                if (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, Constants.EndingTagBytes))
-                {
-                    MemoryOwner<byte> memory = xmlEntry.CopyToMemoryOwner();
-                    PresentEntry(memory);
-                }
-                else
-                {
-                    break;
-                }
+                MemoryOwner<byte> memory = xmlEntry.CopyToMemoryOwner();
+                PresentEntry(memory);
             }
             ScanComplete();
             return reader.Position;
@@ -105,6 +98,13 @@ namespace Importer.Readers
         /// Invoked when no xml entries can be found
         /// </summary>
         protected virtual void ScanComplete()
+        {
+        }
+
+        /// <summary>
+        /// Invoked when no more data can be loaded or scanned
+        /// </summary>
+        protected virtual void ReaderComplete()
         {
         }
     }

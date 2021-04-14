@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -5,7 +6,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Importer.Metrics.Counters;
 using Microsoft.Toolkit.HighPerformance.Buffers;
-using static Importer.Constants;
 
 namespace Importer.Readers
 {
@@ -31,6 +31,11 @@ namespace Importer.Readers
         {
             PresentReaderBatch(new ReaderBatchResult(_availableEntries));
             _availableEntries = new List<MemoryOwner<byte>>();
+        }
+
+        protected override void ReaderComplete()
+        {
+            _resultChannel.Complete();
         }
 
         private void PresentReaderBatch(ReaderBatchResult batchResult)
