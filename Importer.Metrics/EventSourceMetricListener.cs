@@ -68,12 +68,6 @@ namespace Importer.Metrics
                             return;
                         gauge.Set(result);
                         break;
-                    default:
-                        Table table = new Table();
-                        table.AddColumns(dictionary.Keys.ToArray());
-                        table.AddRow(dictionary.Values.Select(x => x.ToString()).ToArray());
-                        AnsiConsole.Render(table);
-                        break;
                 }
             }
         }

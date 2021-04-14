@@ -49,12 +49,18 @@ namespace Importer.Metrics.Counters
         [Event(2, Level = EventLevel.Informational, Message = "Scan Stopped")]
         private void ScanStop(double duration)
         {
+            if (!IsEnabled())
+                return;
+            
             _scanInvocationDurationCounter.WriteMetric(duration);
         }
 
         [Event(3, Level = EventLevel.Informational, Message = "Scanned XML Entries Count")]
         public void FoundEntries(int amount)
         {
+            if (!IsEnabled())
+                return;
+            
             _scanEntriesFoundCounter.Increment(amount);
         }
         
