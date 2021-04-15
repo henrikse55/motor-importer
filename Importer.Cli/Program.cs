@@ -10,7 +10,7 @@ namespace Importer.Cli
     {
         static Task<int> Main(string[] args) 
             => BuildParser()
-                .InvokeAsync("import --source /home/henrik/Documents/motor/data.xml --output mongo --mongo 192.168.1.15");
+                .InvokeAsync(args);
 
         private static Parser BuildParser()
         {
