@@ -1,44 +1,38 @@
 using System;
-using System.Buffers;
 using System.Text;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
-using Importer;
 using Importer.Converters;
-using Importer.Utility;
 using Microsoft.Toolkit.HighPerformance.Buffers;
 using MongoDB.Bson;
 
 namespace Perf
 {
-    [MemoryDiagnoser]
     [SimpleJob]
+    [MemoryDiagnoser]
     public class XmlConversion
     {
-        public byte[] ContentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
-        public MemoryOwner<byte> ProcessItem;
+        private readonly byte[] _contentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
+        private MemoryOwner<byte> _processItem;
 
         [GlobalSetup]
         public void StartUp()
         {
-            ProcessItem = MemoryOwner<byte>.Allocate(ContentBytes.Length);
-            ((Span<byte>)ContentBytes).CopyTo(ProcessItem.Span);
-            
+            _processItem = MemoryOwner<byte>.Allocate(_contentBytes.Length);
+            ((Span<byte>) _contentBytes).CopyTo(_processItem.Span);
         }
-        
+
         [Benchmark(Baseline = true)]
         [BenchmarkCategory("Convert")]
         public BsonDocument ConvertToJsonToBson()
-        { 
-            return BsonDocument.Parse(XmlConverter.ConvertToJson(ProcessItem));
+        {
+            return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem));
         }
-        
+
         [Benchmark]
         [BenchmarkCategory("Convert")]
         public BsonDocument ConvertToBson()
         {
-            return new XmlConverter().ConvertToBson(ProcessItem);
+            return new XmlConverter().ConvertToBson(_processItem);
         }
     }
 }
