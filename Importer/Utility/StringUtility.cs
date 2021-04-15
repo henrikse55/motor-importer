@@ -6,56 +6,60 @@ namespace Importer.Utility
 {
     public static class StringUtility
     {
-        /// <see cref="GetXmlWithoutNamespacesFromBytes"/>
+        /// <see cref="GetXmlWithoutNamespacesFromBytes" />
         [Obsolete("Use new implementation")]
         public static string RemoveNamespaceFromByteString(MemoryOwner<byte> content)
-            => RemoveSubstringFromByteString(content, Constants.NameSpaceDelimiterBytes);
-        
-        public static string GetXmlWithoutNamespacesFromBytes(MemoryOwner<byte> content)
-            => RemoveNameSpaceWithoutIndexing(content, Constants.NameSpaceDelimiterBytes);
-        
-        private static string RemoveNameSpaceWithoutIndexing(MemoryOwner<byte> content, ReadOnlySpan<byte> delimiter)
         {
-            using ArrayPoolBufferWriter<char> buffer = new ArrayPoolBufferWriter<char>(content.Length);
+            return RemoveSubstringFromByteString(content, Constants.NameSpaceDelimiterBytes);
+        }
 
-            ReadOnlySpan<byte> rawContent = content.Span;
+        public static string GetXmlWithoutNamespacesFromBytes(ReadOnlySpan<byte> content)
+        {
+            return RemoveNameSpaceWithoutIndexing(content, Constants.NameSpaceDelimiterBytes);
+        }
+
+        private static string RemoveNameSpaceWithoutIndexing(ReadOnlySpan<byte> content, ReadOnlySpan<byte> delimiter)
+        {
+            using ArrayPoolBufferWriter<char> buffer = new(content.Length);
+
             while (true)
             {
-                int length = rawContent.IndexOf(delimiter);
+                int length = content.IndexOf(delimiter);
 
                 if (length == -1)
                     break;
 
-                ReadOnlySpan<byte> rawSlice = rawContent.Slice(0, length);
+                ReadOnlySpan<byte> rawSlice = content.Slice(0, length);
 
                 Span<char> bufferSlice = buffer.GetSpan(rawSlice.Length);
                 int count = Encoding.Default.GetChars(rawSlice, bufferSlice);
                 buffer.Advance(count);
 
-                rawContent = rawContent.Slice(length + delimiter.Length);
+                content = content.Slice(length + delimiter.Length);
             }
 
-            int result = Encoding.UTF8.GetChars(rawContent, buffer.GetSpan(rawContent.Length));
+            int result = Encoding.UTF8.GetChars(content, buffer.GetSpan(content.Length));
             buffer.Advance(result);
 
             return new string(buffer.WrittenSpan);
         }
-        
+
         private static string RemoveSubstringFromByteString(MemoryOwner<byte> content, ReadOnlySpan<byte> delimiter)
         {
             int[] indexes = SpanUtility.FindAllDelimiterIndexes(content.Span, delimiter);
 
             int finalLength = content.Length - indexes.Length * delimiter.Length;
 
-            ByteStringState stringState = new ByteStringState(content, indexes, delimiter.Length);
-            
+            ByteStringState stringState = new(content, indexes, delimiter.Length);
+
             string result = CreateString(finalLength, stringState);
-            
+
             return result;
         }
 
-        private static string CreateString(int finalLength, ByteStringState stringState) =>
-            string.Create(finalLength, stringState, (state, contentState) =>
+        private static string CreateString(int finalLength, ByteStringState stringState)
+        {
+            return string.Create(finalLength, stringState, (state, contentState) =>
             {
                 ReadOnlySpan<byte> raw = contentState.Content.Span;
                 foreach (int index in contentState.Indexes)
@@ -73,6 +77,7 @@ namespace Importer.Utility
 
                 StringPool.Shared.GetOrAdd(raw, Encoding.ASCII).AsSpan().CopyTo(state);
             });
+        }
 
         private readonly struct ByteStringState
         {

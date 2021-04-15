@@ -1,12 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
-using BenchmarkDotNet.Engines;
-using Importer;
 using Importer.Utility;
 using Microsoft.Toolkit.HighPerformance.Buffers;
 
@@ -20,11 +15,12 @@ namespace Perf
         public readonly byte[] ContentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
 
         private MemoryOwner<byte> _memory;
+
         [GlobalSetup]
         public void StartUp()
         {
             MemoryOwner<byte> owner = MemoryOwner<byte>.Allocate(ContentBytes.Length);
-            ((Span<byte>)ContentBytes).CopyTo(owner.Span);
+            ((Span<byte>) ContentBytes).CopyTo(owner.Span);
             _memory = owner;
         }
 
@@ -33,11 +29,11 @@ namespace Perf
         {
             return StringUtility.RemoveNamespaceFromByteString(_memory);
         }
-        
+
         [Benchmark]
         public string RemoveNameSpaceWithoutIndex()
         {
-            return StringUtility.GetXmlWithoutNamespacesFromBytes(_memory);
+            return StringUtility.GetXmlWithoutNamespacesFromBytes(_memory.Span);
         }
     }
 }
