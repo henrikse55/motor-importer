@@ -26,6 +26,7 @@ namespace Importer.Readers
             Task read = ReadPipe(pipe.Reader);
             
             await Task.WhenAll(write, read);
+            ReaderComplete();
         }
 
         private async Task FillPipe(PipeWriter writer, Stream stream)
