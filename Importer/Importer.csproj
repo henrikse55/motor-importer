@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>10</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -11,11 +12,13 @@
     
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="5.0.5" />
+      <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.0" />
       <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.0.1" />
       <PackageReference Include="MongoDB.Bson" Version="2.12.2" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
       <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
+      <PackageReference Include="U8XmlParser" Version="1.6.1" />
     </ItemGroup>
     
     <ItemGroup>

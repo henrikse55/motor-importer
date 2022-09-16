@@ -61,12 +61,8 @@ namespace Importer.Readers
                 ReadResult result = await reader.ReadAsync(_cancellationToken);
                 var buffer = result.Buffer;
 
-                var stopwatch = MotorPipeEventSource.Log.ScanForXmlStart();
-                
                 SequencePosition position = ScanForDelimiter(buffer);
                 reader.AdvanceTo(position, buffer.End);
-                
-                MotorPipeEventSource.Log.ScanForXmlStop(stopwatch.Value);
 
                 if (result.IsCompleted)
                 {

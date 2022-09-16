@@ -1,6 +1,9 @@
 using System;
+using System.IO;
 using System.Text;
+using Microsoft.Toolkit.HighPerformance;
 using Microsoft.Toolkit.HighPerformance.Buffers;
+using U8Xml;
 
 namespace Importer.Utility
 {
@@ -16,6 +19,11 @@ namespace Importer.Utility
         public static string GetXmlWithoutNamespacesFromBytes(ReadOnlySpan<byte> content)
         {
             return RemoveNameSpaceWithoutIndexing(content, Constants.NameSpaceDelimiterBytes);
+        }
+        
+        public static ReadOnlySpan<byte> GetXmlWithoutNamespacesFromBytes2(ReadOnlySpan<byte> content)
+        {
+            return RemoveNameSpaceWithoutIndexing2(content, Constants.NameSpaceDelimiterBytes);
         }
 
         private static string RemoveNameSpaceWithoutIndexing(ReadOnlySpan<byte> content, ReadOnlySpan<byte> delimiter)
@@ -42,6 +50,50 @@ namespace Importer.Utility
             buffer.Advance(result);
 
             return new string(buffer.WrittenSpan);
+        }
+        
+        private static ReadOnlySpan<byte> RemoveNameSpaceWithoutIndexing2(ReadOnlySpan<byte> content, ReadOnlySpan<byte> delimiter)
+        {
+            int count = Count(content, delimiter);
+            int sizeReduction = count * delimiter.Length;
+
+            Span<byte> buffer = GC.AllocateUninitializedArray<byte>(content.Length - sizeReduction, true);
+
+            int start = 0;
+            while (true)
+            {
+                int length = content.IndexOf(delimiter);
+
+                if (length == -1)
+                    break;
+
+                ReadOnlySpan<byte> rawSlice = content.Slice(0, length);
+                rawSlice.CopyTo(buffer.Slice(start, length));
+                
+                content = content.Slice(length + delimiter.Length);
+                start += length;
+            }
+
+            content.CopyTo(buffer.Slice(start));
+            return buffer;
+        }
+
+        private static int Count(ReadOnlySpan<byte> content, ReadOnlySpan<byte> delimiter)
+        {
+            int count = 0;
+
+            while (true)
+            {
+                int length = content.IndexOf(delimiter);
+
+                if (length == -1)
+                    break;
+
+                count++;
+                content = content.Slice(length + delimiter.Length);
+            }
+
+            return count;
         }
 
         private static string RemoveSubstringFromByteString(MemoryOwner<byte> content, ReadOnlySpan<byte> delimiter)

@@ -27,7 +27,7 @@ namespace Importer.Converters
 
         public BsonDocument ConvertToBson(MemoryOwner<byte> item)
         {
-            string patchedXml = PatchXmlData(item.Span);
+            string patchedXml = string.Empty;//PatchXmlData(item.Span);
             TextReader textReader = new StringReader(patchedXml);
 
             string hashId = item.GetByteHash();

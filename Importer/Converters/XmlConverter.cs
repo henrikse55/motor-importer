@@ -1,24 +1,25 @@
 using System;
+using System.IO;
 using Importer.Utility;
-using Microsoft.Toolkit.HighPerformance;
-using Microsoft.Toolkit.HighPerformance.Buffers;
 
 namespace Importer.Converters
 {
     public partial class XmlConverter
     {
-        public string PatchXmlData(ReadOnlySpan<byte> content)
+        public static ReadOnlySpan<byte> PatchXmlData(ReadOnlySpan<byte> content)
         {
             int index = content.IndexOf(Constants.StartTagBytes);
+            if (index == -1)
+                index = 0;
+            
             content = content.Slice(index);
 
-            using ArrayPoolBufferWriter<byte> fixedXml =
-                new(content.Length + Constants.EndingTagBytes.Length);
+            Span<byte> fixedXml = GC.AllocateUninitializedArray<byte>(content.Length + Constants.EndingTagBytes.Length);
 
-            fixedXml.Write(content);
-            fixedXml.Write((ReadOnlySpan<byte>) Constants.EndingTagBytes);
+            content.CopyTo(fixedXml);
+            Constants.EndingTagBytes.CopyTo(fixedXml[content.Length..]);
 
-            return StringUtility.GetXmlWithoutNamespacesFromBytes(fixedXml.WrittenSpan);
+            return StringUtility.GetXmlWithoutNamespacesFromBytes2(fixedXml);
         }
     }
 }

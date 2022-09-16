@@ -14,7 +14,7 @@ namespace Importer.Converters
 
         private string ConvertToJson(ReadOnlySpan<byte> content)
         {
-            string patchedXml = PatchXmlData(content);
+            string patchedXml = string.Empty;//PatchXmlData(content);
 
             XmlDocument document = new XmlDocument();
             document.LoadXml(patchedXml);

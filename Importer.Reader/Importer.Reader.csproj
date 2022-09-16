@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-Importer.Reader-B3E8C8DD-74B6-4AA5-A33C-83DD2C4BB17F</UserSecretsId>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Grpc" Version="2.46.3" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.47.0" />
+        <PackageReference Include="Grpc.Core" Version="2.46.3" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.47.0" />
+        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.47.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.47.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Orleans.Clustering.ZooKeeper" Version="4.0.0-preview1" />
+        <PackageReference Include="Microsoft.Orleans.OrleansTelemetryConsumers.Linux" Version="4.0.0-preview1" />
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="4.0.0-preview1" />
+        <PackageReference Include="Microsoft.Orleans.Server" Version="4.0.0-preview1" />
+        <PackageReference Include="Microsoft.Orleans.Streaming" Version="4.0.0-preview1" />
+        <PackageReference Include="OrleansDashboard" Version="4.0.0-preview2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Importer\Importer.csproj" />
+    </ItemGroup>
+</Project>

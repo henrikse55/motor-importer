@@ -8,6 +8,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Importer.Metrics", "Importe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Perf", "Perf\Perf.csproj", "{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Distributed", "Distributed", "{51F70612-8302-4624-9F43-373DF0A3C25A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Importer.Reader", "Importer.Reader\Importer.Reader.csproj", "{C6E40E81-96C4-45CB-95AA-6D1A015437CD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Silos", "Silos", "{767E532D-5C09-4A3D-B895-570FB0A78796}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +36,13 @@ Global
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6E40E81-96C4-45CB-95AA-6D1A015437CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6E40E81-96C4-45CB-95AA-6D1A015437CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6E40E81-96C4-45CB-95AA-6D1A015437CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6E40E81-96C4-45CB-95AA-6D1A015437CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{767E532D-5C09-4A3D-B895-570FB0A78796} = {51F70612-8302-4624-9F43-373DF0A3C25A}
+		{C6E40E81-96C4-45CB-95AA-6D1A015437CD} = {767E532D-5C09-4A3D-B895-570FB0A78796}
 	EndGlobalSection
 EndGlobal
