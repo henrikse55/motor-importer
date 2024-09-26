@@ -1,18 +1,17 @@
-using System.Text;
+using System;
+using System.Buffers;
+using System.Runtime.CompilerServices;
 
-namespace Importer
+namespace Importer;
+
+public readonly ref struct TagLiterals
 {
-    public static class Constants
+    public readonly ReadOnlySpan<byte> EndingTag = "</ns:Statistik>"u8;
+    public readonly ReadOnlySpan<byte> StartTag = "<Statistik>"u8;
+    public readonly ReadOnlySpan<byte> EndingTagWithoutNameSpace = "</Statistik>"u8;
+    public readonly ReadOnlySpan<byte> NameSpaceDelimiter = "ns:"u8;
+
+    public TagLiterals()
     {
-        public const string EndingTag = "</ns:Statistik>";
-        public static byte[] EndingTagBytes { get; } = Encoding.UTF8.GetBytes(EndingTag);
-
-        
-        public const string StartTag = "<ns:Statistik>";
-        public static byte[] StartTagBytes { get; } = Encoding.UTF8.GetBytes(StartTag);
-
-        
-        public const string NameSpaceDelimiter = "ns:";
-        public static byte[] NameSpaceDelimiterBytes { get; } = Encoding.UTF8.GetBytes(NameSpaceDelimiter);
     }
 }

@@ -1,39 +1,44 @@
 using System;
+using System.Buffers;
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Diagnosers;
+using CommunityToolkit.HighPerformance.Buffers;
 using Importer.Utility;
-using Microsoft.Toolkit.HighPerformance.Buffers;
 
-namespace Perf
+namespace Perf;
+
+[SimpleJob]
+[MemoryDiagnoser]
+public class StringUtilsBench
 {
-    [SimpleJob]
-    [MemoryDiagnoser]
-    [EventPipeProfiler(EventPipeProfile.GcVerbose)]
-    public class StringUtils
+    public static readonly byte[] ContentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
+    private ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>(ContentBytes);
+
+    private MemoryOwner<byte> _memory;
+
+    [GlobalSetup]
+    public void StartUp()
     {
-        public readonly byte[] ContentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
+        MemoryOwner<byte> owner = MemoryOwner<byte>.Allocate(ContentBytes.Length);
+        ((Span<byte>) ContentBytes).CopyTo(owner.Span);
+        _memory = owner;
+    }
 
-        private MemoryOwner<byte> _memory;
+    [Benchmark]
+    public string RemoveNameSpaceToString()
+    {
+        return StringUtilityOld.RemoveNamespaceFromByteString(_memory);
+    }
 
-        [GlobalSetup]
-        public void StartUp()
-        {
-            MemoryOwner<byte> owner = MemoryOwner<byte>.Allocate(ContentBytes.Length);
-            ((Span<byte>) ContentBytes).CopyTo(owner.Span);
-            _memory = owner;
-        }
+    [Benchmark(Baseline = true)]
+    public string RemoveNameSpaceWithoutIndex()
+    {
+        return StringUtility.GetXmlWithoutNamespacesFromBytes(_memory.Span);
+    }
 
-        [Benchmark(Baseline = true)]
-        public string RemoveNameSpaceToString()
-        {
-            return StringUtility.RemoveNamespaceFromByteString(_memory);
-        }
-
-        [Benchmark]
-        public string RemoveNameSpaceWithoutIndex()
-        {
-            return StringUtility.GetXmlWithoutNamespacesFromBytes(_memory.Span);
-        }
+    [Benchmark]
+    public ReadOnlySpan<byte> RemoveNameSpacesFromSequence()
+    {
+        return StringUtility.GetXmlWithoutNamespaces(sequence);
     }
 }

@@ -1,15 +1,17 @@
 using System.Buffers;
-using Microsoft.Toolkit.HighPerformance.Buffers;
+using System.Runtime.CompilerServices;
 
-namespace Importer.Extensions
+using CommunityToolkit.HighPerformance.Buffers;
+
+namespace Importer.Extensions;
+
+internal static class SpanExtensions
 {
-    public static class SpanExtensions
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static MemoryOwner<TType> CopyToMemoryOwner<TType>(this ReadOnlySequence<TType> sequence)
     {
-        public static MemoryOwner<TType> CopyToMemoryOwner<TType>(this ReadOnlySequence<TType> sequence)
-        {
-            MemoryOwner<TType> owner = MemoryOwner<TType>.Allocate((int)sequence.Length);
-            sequence.CopyTo(owner.Span);
-            return owner;
-        }
+        MemoryOwner<TType> owner = MemoryOwner<TType>.Allocate((int)sequence.Length);
+        sequence.CopyTo(owner.Span);
+        return owner;
     }
 }

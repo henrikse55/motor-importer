@@ -1,38 +1,37 @@
 using System;
 using System.Text;
 using BenchmarkDotNet.Attributes;
+using CommunityToolkit.HighPerformance.Buffers;
 using Importer.Converters;
-using Microsoft.Toolkit.HighPerformance.Buffers;
 using MongoDB.Bson;
 
-namespace Perf
+namespace Perf;
+
+[SimpleJob]
+[MemoryDiagnoser]
+public class XmlConversion
 {
-    [SimpleJob]
-    [MemoryDiagnoser]
-    public class XmlConversion
+    private readonly byte[] _contentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
+    private MemoryOwner<byte> _processItem;
+
+    [GlobalSetup]
+    public void StartUp()
     {
-        private readonly byte[] _contentBytes = Encoding.UTF8.GetBytes(LargeContent.LargeXmlEntry);
-        private MemoryOwner<byte> _processItem;
+        _processItem = MemoryOwner<byte>.Allocate(_contentBytes.Length);
+        ((Span<byte>) _contentBytes).CopyTo(_processItem.Span);
+    }
 
-        [GlobalSetup]
-        public void StartUp()
-        {
-            _processItem = MemoryOwner<byte>.Allocate(_contentBytes.Length);
-            ((Span<byte>) _contentBytes).CopyTo(_processItem.Span);
-        }
+    [Benchmark(Baseline = true)]
+    [BenchmarkCategory("Convert")]
+    public BsonDocument ConvertToJsonToBson()
+    {
+        return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem));
+    }
 
-        [Benchmark(Baseline = true)]
-        [BenchmarkCategory("Convert")]
-        public BsonDocument ConvertToJsonToBson()
-        {
-            return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem));
-        }
-
-        [Benchmark]
-        [BenchmarkCategory("Convert")]
-        public BsonDocument ConvertToBson()
-        {
-            return new XmlConverter().ConvertToBson(_processItem);
-        }
+    [Benchmark]
+    [BenchmarkCategory("Convert")]
+    public BsonDocument ConvertToBson()
+    {
+        return new XmlConverter().ConvertToBson(_processItem);
     }
 }

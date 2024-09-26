@@ -2,13 +2,13 @@
 using System.Linq;
 using BenchmarkDotNet.Running;
 
-namespace Perf
+namespace Perf;
+
+sealed class Program
 {
-    class Program
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
-        }
+        BenchmarkRunner.Run<StringUtilsBench>();
+        // BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
     }
 }

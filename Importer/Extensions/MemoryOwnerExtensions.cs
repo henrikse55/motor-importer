@@ -1,25 +1,24 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Toolkit.HighPerformance.Buffers;
+using CommunityToolkit.HighPerformance.Buffers;
 
-namespace Importer.Extensions
+namespace Importer.Extensions;
+
+internal static class MemoryOwnerExtensions
 {
-    public static class MemoryOwnerExtensions
+    public static string GetByteHash(this MemoryOwner<byte> item)
     {
-        public static string GetByteHash(this MemoryOwner<byte> item)
+        byte[] hashResult = SHA512.HashData(item.Span);
+        return string.Create(hashResult.Length, hashResult, (state, bytes) =>
         {
-            byte[] hashResult = SHA512.HashData(item.Span);
-            return string.Create(hashResult.Length, hashResult, (state, bytes) =>
+            StringBuilder builder = new();
+            for (int i = 0; i < bytes.Length; i++)
             {
-                StringBuilder builder = new();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    ref byte b = ref bytes[i];
-                    builder.Append(b.ToString("X2"));
-                }
+                ref byte b = ref bytes[i];
+                builder.Append(b.ToString("X2"));
+            }
 
-                builder.CopyTo(0, state, state.Length);
-            });
-        }
+            builder.CopyTo(0, state, state.Length);
+        });
     }
 }

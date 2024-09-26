@@ -1,8 +1,8 @@
-namespace Perf
+namespace Perf;
+
+public class LargeContent
 {
-    public class LargeContent
-    {
-        public const string LargeXmlEntry = @"""
+  public const string LargeXmlEntry = @"""
   <ns:StatistikSamling>
     <ns:Statistik>
       <ns:KoeretoejIdent>1002601198110653</ns:KoeretoejIdent>
@@ -90,5 +90,4 @@ namespace Perf
       </ns:TilladelseSamling>
     
       """;
-    }
 }
