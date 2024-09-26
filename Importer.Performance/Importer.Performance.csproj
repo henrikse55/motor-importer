@@ -17,4 +17,8 @@
       <ProjectReference Include="..\Importer\Importer.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="perf.data" />
+    </ItemGroup>
+
 </Project>
