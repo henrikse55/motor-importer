@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Importer", "Importer\Importer.csproj", "{AEA803E8-B072-4529-A966-E94C3F91DD5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Importer.Metrics", "Importer.Metrics\Importer.Metrics.csproj", "{DA90B38D-8584-40BD-9952-7645424817AE}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Perf", "Perf\Perf.csproj", "{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Importer.Zip", "Importer.Zip\Importer.Zip.csproj", "{18F1F771-A4FB-46E6-B020-EE7B9AABEE45}"
@@ -20,10 +18,6 @@ Global
 		{AEA803E8-B072-4529-A966-E94C3F91DD5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AEA803E8-B072-4529-A966-E94C3F91DD5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AEA803E8-B072-4529-A966-E94C3F91DD5D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DA90B38D-8584-40BD-9952-7645424817AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DA90B38D-8584-40BD-9952-7645424817AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DA90B38D-8584-40BD-9952-7645424817AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DA90B38D-8584-40BD-9952-7645424817AE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C56E0E0-4EFB-4833-B321-526FD00C1DC1}.Release|Any CPU.ActiveCfg = Release|Any CPU

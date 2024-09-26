@@ -5,7 +5,6 @@ using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using FASTER.core;
-using Importer;
 
 namespace Perf.Utils;
 

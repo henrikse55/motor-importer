@@ -24,9 +24,5 @@
       <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
       <PackageReference Include="U8XmlParser" Version="1.6.1" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <ProjectReference Include="..\Importer.Metrics\Importer.Metrics.csproj" />
-    </ItemGroup>
 
 </Project>
