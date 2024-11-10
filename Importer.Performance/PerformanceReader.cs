@@ -1,32 +1,58 @@
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using CommunityToolkit.HighPerformance.Buffers;
+using FASTER.core;
 using Importer.Converters;
 using Importer.Readers;
 using Importer.Utility;
+using Microsoft.Extensions.Logging;
 using Microsoft.IO;
 
 namespace Importer.Performance;
 
 public sealed class PerformanceReader : ReaderBase
 {
-    private readonly Meter _meter = new Meter("Motor.Performance");
-    private readonly RecyclableMemoryStreamManager _memoryStreamManager = new();
+    private readonly FasterLog _log;
+    private readonly Meter _meter = new("Motor.Performance");
 
-    private readonly Counter<int> _counter;
+    private readonly IBuffer<byte> _xmlBuffer = new ArrayPoolBufferWriter<byte>();
+    private readonly IBuffer<byte> _jsonBuffer = new ArrayPoolBufferWriter<byte>();
+    
+    private readonly ObservableCounter<long> _counter;
+    
+    private long _jsonEntries;
     
     /// <inheritdoc />
-    public PerformanceReader(CancellationToken cancellationToken) : base(cancellationToken)
+    public PerformanceReader(FasterLog log, CancellationToken cancellationToken) : base(cancellationToken)
     {
-        _counter = _meter.CreateCounter<int>("Xml Entry");
+        _log = log;
+        _counter = _meter.CreateObservableCounter("Xml Entries", () => _jsonEntries);
     }
 
     /// <inheritdoc />
-    protected override void PresentEntry(ReadOnlySequence<byte> entry)
+    protected override void PresentEntry(ref ReadOnlySequence<byte> entry)
     {
-        using var util = StringUtility.GetXmlWithoutNamespacesStream(entry, _memoryStreamManager);
-        using var memoryStream = XmlConverter.ConvertToU8(util, _memoryStreamManager);
-        Console.WriteLine($"{memoryStream.Length} bytes");
-        _counter.Add(1);
+        StringUtility.GetXmlWithoutNamespacesStream(ref entry, _xmlBuffer);
+
+        var span = _xmlBuffer.WrittenSpan;
+        var startingPosition = span.IndexOf("<Statistik>"u8);
+        if (startingPosition == -1)
+            startingPosition = 0;
+        
+        XmlConverter.ConvertToU8(span[startingPosition..], _jsonBuffer);
+
+        var item = _jsonBuffer.WrittenSpan;
+        _log.Enqueue(item);
+        
+        _jsonBuffer.Clear();
+        _xmlBuffer.Clear();
+        _jsonEntries++;
+    }
+
+    /// <inheritdoc />
+    protected override void CommitScan()
+    {
+        _log.Commit();
     }
 }

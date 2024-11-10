@@ -25,7 +25,7 @@ public class XmlConversion
     [BenchmarkCategory("Convert")]
     public BsonDocument ConvertToJsonToBson()
     {
-        return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem));
+        return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem.Span));
     }
 
     [Benchmark]

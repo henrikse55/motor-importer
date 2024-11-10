@@ -16,38 +16,13 @@ public abstract class ReaderBase
         _cancellationToken = cancellationToken;
     }
 
-    public async Task Read(Stream xmlStream)
+    public async Task<long> Read(Stream xmlStream)
     {
-        Pipe pipe = new();
-        Task write = FillPipe(pipe.Writer, xmlStream);
-        Task read = ReadPipe(pipe.Reader);
+        var pipeReader = PipeReader.Create(xmlStream);
+        Task read = ReadPipe(pipeReader);
             
-        await Task.WhenAll(write, read).ConfigureAwait(false);
-    }
-
-    private async Task FillPipe(PipeWriter writer, Stream stream)
-    {
-        const int minimalSize = 4096 * 4096;
-        while (!_cancellationToken.IsCancellationRequested)
-        {
-            Memory<byte> buffer = writer.GetMemory(minimalSize);
-
-            int bytesRead = await stream.ReadAsync(buffer, _cancellationToken).ConfigureAwait(false);
-
-            if (bytesRead == 0)
-            {
-                break;
-            }
-
-            writer.Advance(bytesRead);
-
-            FlushResult flushResult = await writer.FlushAsync(_cancellationToken).ConfigureAwait(false);
-            if (flushResult.IsCompleted)
-            {
-                break;
-            }
-        }
-        await writer.CompleteAsync().ConfigureAwait(false);
+        await read.ConfigureAwait(false);
+        return 0;
     }
 
     private async Task ReadPipe(PipeReader reader)
@@ -59,6 +34,8 @@ public abstract class ReaderBase
 
             SequencePosition position = ScanForDelimiter(buffer);
             reader.AdvanceTo(position, buffer.End);
+            
+            CommitScan();
 
             if (result.IsCompleted)
             {
@@ -74,8 +51,7 @@ public abstract class ReaderBase
         SequenceReader<byte> reader = new(sequence);
         while (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, "</ns:Statistik>"u8))
         {
-            // MemoryOwner<byte> memory = xmlEntry.CopyToMemoryOwner();
-            PresentEntry(xmlEntry);
+            PresentEntry(ref xmlEntry);
         }
         return reader.Position;
     }
@@ -83,5 +59,7 @@ public abstract class ReaderBase
     /// <summary>
     /// Invoked on each xml entry found
     /// </summary>
-    protected abstract void PresentEntry(ReadOnlySequence<byte> entry);
+    protected abstract void PresentEntry(ref ReadOnlySequence<byte> entry);
+
+    protected abstract void CommitScan();
 }

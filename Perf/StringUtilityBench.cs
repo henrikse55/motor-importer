@@ -24,12 +24,6 @@ public class StringUtilsBench
         _memory = owner;
     }
 
-    [Benchmark]
-    public string RemoveNameSpaceToString()
-    {
-        return StringUtilityOld.RemoveNamespaceFromByteString(_memory);
-    }
-
     [Benchmark(Baseline = true)]
     public string RemoveNameSpaceWithoutIndex()
     {

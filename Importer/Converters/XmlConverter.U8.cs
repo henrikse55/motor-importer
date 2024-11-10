@@ -1,8 +1,11 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 using CommunityToolkit.HighPerformance.Buffers;
 
@@ -14,64 +17,43 @@ namespace Importer.Converters;
 
 public partial class XmlConverter
 {
-    public static MemoryStream ConvertToU8(ReadOnlyMemory<byte> item)
+    private static readonly JsonWriterOptions JsonWriterOptions = new()
     {
-        ReadOnlySpan<byte> patchedXml = PatchXmlData(item.Span);
-        using var parser = XmlParser.Parse(patchedXml);
+        SkipValidation = true,
+        Indented = false,
+    };
 
-        MemoryStream stream = new();
-        Utf8JsonWriter writer = new (stream, new JsonWriterOptions()
-        {
-            SkipValidation = true
-        });
-            
-        writer.WriteStartObject();
-            
-        WriteContent(parser.Root.Name.AsSpan(), parser.Root, writer);
-
-        writer.WriteEndObject();
-        writer.Flush();
-
-        stream.Position = 0;
-        return stream;
-    }
-    
-    public static MemoryStream ConvertToU8(MemoryStream item, RecyclableMemoryStreamManager memoryStreamManager)
+    public static void ConvertToU8(ReadOnlySpan<byte> item, IBuffer<byte> jsonBuffer)
     {
         using var parser = XmlParser.Parse(item);
 
-        MemoryStream stream = memoryStreamManager.GetStream();
-        Utf8JsonWriter writer = new (stream, new JsonWriterOptions()
-        {
-            SkipValidation = true,
-            Indented = false,
-        });
+        Utf8JsonWriter writer = new(jsonBuffer, JsonWriterOptions);
             
         writer.WriteStartObject();
-            
-        WriteContent(parser.Root.Name.AsSpan(), parser.Root, writer);
+
+        XmlNode root = parser.Root;
+        WriteContent(ref root, writer);
 
         writer.WriteEndObject();
         writer.Flush();
-
-        stream.Position = 0;
-        return stream;
     }
 
-    private static void WriteContent(ReadOnlySpan<byte> name, XmlNode content, Utf8JsonWriter writer)
+    private static void WriteContent(ref XmlNode content, Utf8JsonWriter writer)
     {
-        writer.WriteStartObject(name);
+        writer.WriteStartObject(content.Name.AsSpan());
         foreach (XmlNode childNode in content.Children)
         {
+            XmlNode child = childNode;
+            RawString childNodeName = childNode.Name;
             if (childNode.HasChildren)
             {
-                if (childNode.Name.EndsWith("Samling") || childNode.Name.EndsWith("Liste"))
+                if (childNodeName.EndsWith("Samling"u8) || childNodeName.EndsWith("Liste"u8))
                 {
-                    WriteArrayContent(writer, childNode);
+                    WriteArrayContent(ref child, writer);
                 }
-                else if (childNode.Name.EndsWith("Struktur"))
+                else if (childNodeName.EndsWith("Struktur"u8))
                 {
-                    WriteContent(childNode.Name.AsSpan(), childNode, writer);
+                    WriteContent(ref child, writer);
                 }
             }
             else
@@ -81,14 +63,16 @@ public partial class XmlConverter
         }
         writer.WriteEndObject();
     }
-
-    private static void WriteArrayContent(Utf8JsonWriter writer, XmlNode childNode)
+    
+    private static void WriteArrayContent(ref XmlNode childNode, Utf8JsonWriter writer)
     {
         writer.WriteStartArray(childNode.Name.AsSpan());
         foreach (var arrayNode in childNode.Children)
         {
+            XmlNode content = arrayNode;
+            
             writer.WriteStartObject();
-            WriteContent(arrayNode.Name.AsSpan(), arrayNode, writer);
+            WriteContent(ref content, writer);
             writer.WriteEndObject();
         }
         writer.WriteEndArray();

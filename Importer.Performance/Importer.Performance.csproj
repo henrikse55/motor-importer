@@ -8,8 +8,7 @@
     </PropertyGroup>
     
     <PropertyGroup>
-        <PublishAot>true</PublishAot>
-        <OptimizationPreference>Speed</OptimizationPreference>
+        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     </PropertyGroup>
 
     <ItemGroup>

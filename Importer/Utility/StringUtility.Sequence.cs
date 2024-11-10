@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 using CommunityToolkit.HighPerformance;
+using CommunityToolkit.HighPerformance.Buffers;
 
 using Importer.Converters;
 
@@ -13,16 +14,6 @@ namespace Importer.Utility;
 
 public static partial class StringUtility
 {
-    
-    [SkipLocalsInit]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<byte> PatchXmlData(in ReadOnlySpan<byte> content)
-    {
-        int index = content.IndexOf("<Statistik>"u8);
-        return index == -1 ? content : content[index..];
-    }
-    
-    
     public static ReadOnlySpan<byte> GetXmlWithoutNamespaces(in ReadOnlySequence<byte> content)
     {
         ArrayBufferWriter<byte> buffer = new((int)content.Length);
@@ -61,7 +52,7 @@ public static partial class StringUtility
         return buffer.WrittenSpan;
     }
     
-    public static MemoryStream GetXmlWithoutNamespacesStream(in ReadOnlySequence<byte> content, in RecyclableMemoryStreamManager manager)
+    public static MemoryStream GetXmlWithoutNamespacesStream(ref ReadOnlySequence<byte> content, in RecyclableMemoryStreamManager manager)
     {
         var stream = manager.GetStream();
         
@@ -92,41 +83,27 @@ public static partial class StringUtility
         return stream;
     }
     
-    public static ReadOnlyMemory<byte> GetXmlWithoutNamespacesToMemory(in ReadOnlySequence<byte> content)
+    public static void GetXmlWithoutNamespacesStream(ref ReadOnlySequence<byte> content, IBuffer<byte> stream)
     {
-        ArrayBufferWriter<byte> buffer = new((int)content.Length);
-
         SequenceReader<byte> reader = new(content);
         while (!reader.End)
         {
             if (reader.TryReadTo(out ReadOnlySequence<byte> result, "ns:"u8))
             {
-                int length = (int)result.Length;
-
-                Span<byte> writeableSpan = buffer.GetSpan(length);
-                result.CopyTo(writeableSpan);
-                buffer.Advance(length);
+                foreach (ReadOnlyMemory<byte> memory in result)
+                {
+                    stream.Write(memory.Span);
+                }
             }
             else
             {
-                int readerRemaining = (int)reader.Remaining;
-                
-                Span<byte> writeableSpan = buffer.GetSpan(readerRemaining);
-                reader.UnreadSequence.CopyTo(writeableSpan);
-                
-                buffer.Advance(readerRemaining);
-                reader.Advance(readerRemaining);
+                ReadOnlySpan<byte> readerUnreadSpan = reader.UnreadSpan;
+                stream.Write(readerUnreadSpan);
+                reader.Advance(readerUnreadSpan.Length);
             }
         }
 
-        
-        ReadOnlySpan<byte> endingTag = "</Statistik>"u8;
-        int endingTagLength = endingTag.Length;
-        
-        Span<byte> ending = buffer.GetSpan(endingTagLength);
-        endingTag.CopyTo(ending);
-        buffer.Advance(endingTagLength);
-        
-        return buffer.WrittenMemory;
+        ReadOnlySpan<byte> value = "</Statistik>"u8;
+        stream.Write(value);
     }
 }

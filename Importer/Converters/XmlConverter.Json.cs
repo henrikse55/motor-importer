@@ -8,10 +8,7 @@ namespace Importer.Converters;
 
 public partial class XmlConverter
 {
-    public static string ConvertToJson(MemoryOwner<byte> content)
-        => new XmlConverter().ConvertToJson(content.Span);
-
-    private string ConvertToJson(ReadOnlySpan<byte> content)
+    public static string ConvertToJson(ReadOnlySpan<byte> content)
     {
         string patchedXml = string.Empty;//PatchXmlData(content);
 
