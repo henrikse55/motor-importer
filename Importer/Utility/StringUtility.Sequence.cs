@@ -83,7 +83,7 @@ public static partial class StringUtility
         return stream;
     }
     
-    public static void GetXmlWithoutNamespacesStream(ref ReadOnlySequence<byte> content, IBuffer<byte> stream)
+    public static void GetXmlWithoutNamespacesStream(ReadOnlySequence<byte> content, IBuffer<byte> stream)
     {
         SequenceReader<byte> reader = new(content);
         while (!reader.End)
