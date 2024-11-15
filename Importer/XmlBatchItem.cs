@@ -10,14 +10,16 @@ namespace Importer;
 
 public sealed class XmlBatchItem : IResettable
 {
-    private readonly Queue<int> _xmlItemSizes = new();
+    private readonly ArrayPoolBufferWriter<int> _xmlItemSizes = new();
     private readonly ArrayPoolBufferWriter<byte> _buffer = new();
 
     public IEnumerable<ReadOnlySequence<byte>> GetXmlItems()
     {
         ReadOnlyMemory<byte> written = _buffer.WrittenMemory;
-        foreach (int xmlSize in _xmlItemSizes)
+        ReadOnlyMemory<int> sizes = _xmlItemSizes.WrittenMemory;
+        for (int index = 0; index < sizes.Length; index++)
         {
+            int xmlSize = sizes.Span[index];
             yield return new ReadOnlySequence<byte>(written[..xmlSize]);
             written = written[xmlSize..];
         }
@@ -25,11 +27,14 @@ public sealed class XmlBatchItem : IResettable
 
     public void Write(in ReadOnlySequence<byte> buffer)
     {
-        _xmlItemSizes.Enqueue((int)buffer.Length);
+        int bufferLength = (int)buffer.Length;
+        Span<int> item = _xmlItemSizes.GetSpan(1);
+        item[0] = bufferLength;
+        _xmlItemSizes.Advance(1);
         
-        Span<byte> span = _buffer.GetSpan((int)buffer.Length);
+        Span<byte> span = _buffer.GetSpan(bufferLength);
         buffer.CopyTo(span);
-        _buffer.Advance((int)buffer.Length);
+        _buffer.Advance(bufferLength);
     }
     
     /// <inheritdoc />

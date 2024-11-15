@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using CommunityToolkit.HighPerformance.Buffers;
 using FASTER.core;
 using Importer.Converters;
@@ -20,6 +21,9 @@ public sealed class PerformanceReader : ReaderBase
     
     private readonly ObjectPool<ArrayPoolBufferWriter<byte>> arrayPoolBufferWriter =
         new DefaultObjectPool<ArrayPoolBufferWriter<byte>>(new DefaultPooledObjectPolicy<ArrayPoolBufferWriter<byte>>());
+
+    private readonly ObjectPool<XmlConverter> _converterPool =
+        new DefaultObjectPool<XmlConverter>(new DefaultPooledObjectPolicy<XmlConverter>());
     
     private long _jsonEntries;
     
@@ -38,7 +42,7 @@ public sealed class PerformanceReader : ReaderBase
         await Parallel.ForEachAsync(xmlEntries, (sequence, token) =>
         {
             ArrayPoolBufferWriter<byte> xmlBuffer = arrayPoolBufferWriter.Get();
-            ArrayPoolBufferWriter<byte> jsonBuffer = arrayPoolBufferWriter.Get();
+            XmlConverter converter = _converterPool.Get();
             
             StringUtility.GetXmlWithoutNamespacesStream(sequence, xmlBuffer);
 
@@ -47,16 +51,14 @@ public sealed class PerformanceReader : ReaderBase
             if (startingPosition == -1)
                 startingPosition = 0;
         
-            XmlConverter.ConvertToU8(span[startingPosition..], jsonBuffer);
+            converter.ConvertToU8(span[startingPosition..]);
 
-            var jsonBufferWrittenSpan = jsonBuffer.WrittenSpan;
-            // _log.Enqueue(jsonBufferWrittenSpan);
-            //
-            jsonBuffer.Clear();
+            var jsonBufferWrittenSpan = converter.WrittenMemory;
+            
             xmlBuffer.Clear();
             
             arrayPoolBufferWriter.Return(xmlBuffer);
-            arrayPoolBufferWriter.Return(jsonBuffer);
+            _converterPool.Return(converter);
             
             Interlocked.Increment(ref _jsonEntries);
 

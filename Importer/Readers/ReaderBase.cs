@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.ObjectPool;
@@ -16,6 +17,8 @@ public abstract class ReaderBase
     private readonly ObjectPool<XmlBatchItem> _batchItemPool =
         new DefaultObjectPool<XmlBatchItem>(new DefaultPooledObjectPolicy<XmlBatchItem>());
 
+    private readonly Channel<XmlBatchItem> _channel = Channel.CreateUnbounded<XmlBatchItem>();
+
     protected ReaderBase(CancellationToken cancellationToken)
     {
         _cancellationToken = cancellationToken;
@@ -26,8 +29,9 @@ public abstract class ReaderBase
         Pipe pipe = new();
         Task write = FillPipe(pipe.Writer, xmlStream);
         Task read = ReadPipe(pipe.Reader);
+        Task present = PresentFromChannel();
             
-        await Task.WhenAll(write, read).ConfigureAwait(false);
+        await Task.WhenAll(write, read, present).ConfigureAwait(false);
     }
 
     private async Task FillPipe(PipeWriter writer, Stream stream)
@@ -65,8 +69,7 @@ public abstract class ReaderBase
             SequencePosition position = ScanForDelimiterBatch(buffer, out var batchItem);
             reader.AdvanceTo(position, buffer.End);
             
-            await PresentEntry(batchItem).ConfigureAwait(false);
-            _batchItemPool.Return(batchItem);
+            await _channel.Writer.WriteAsync(batchItem, _cancellationToken).ConfigureAwait(false);
             
             CommitScan();
 
@@ -79,16 +82,6 @@ public abstract class ReaderBase
         await reader.CompleteAsync().ConfigureAwait(false);
     }
 
-    private SequencePosition ScanForDelimiter(ReadOnlySequence<byte> sequence)
-    {
-        SequenceReader<byte> reader = new(sequence);
-        while (reader.TryReadTo(out ReadOnlySequence<byte> xmlEntry, "</ns:Statistik>"u8))
-        {
-            // PresentEntry(ref xmlEntry);
-        }
-        return reader.Position;
-    }
-    
     private SequencePosition ScanForDelimiterBatch(ReadOnlySequence<byte> sequence, out XmlBatchItem batchItem)
     {
         batchItem = _batchItemPool.Get();
@@ -99,6 +92,15 @@ public abstract class ReaderBase
             batchItem.Write(xmlEntry);
         }
         return reader.Position;
+    }
+
+    private async Task PresentFromChannel()
+    {
+        await foreach(var item in _channel.Reader.ReadAllAsync(_cancellationToken).ConfigureAwait(false))
+        {
+            await PresentEntry(item).ConfigureAwait(false);
+            _batchItemPool.Return(item);
+        }
     }
 
     /// <summary>

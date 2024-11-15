@@ -2,8 +2,6 @@ using System;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using CommunityToolkit.HighPerformance.Buffers;
-using Importer.Converters;
-using MongoDB.Bson;
 
 namespace Perf;
 
@@ -19,19 +17,5 @@ public class XmlConversion
     {
         _processItem = MemoryOwner<byte>.Allocate(_contentBytes.Length);
         ((Span<byte>) _contentBytes).CopyTo(_processItem.Span);
-    }
-
-    [Benchmark(Baseline = true)]
-    [BenchmarkCategory("Convert")]
-    public BsonDocument ConvertToJsonToBson()
-    {
-        return BsonDocument.Parse(XmlConverter.ConvertToJson(_processItem.Span));
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Convert")]
-    public BsonDocument ConvertToBson()
-    {
-        return new XmlConverter().ConvertToBson(_processItem);
     }
 }

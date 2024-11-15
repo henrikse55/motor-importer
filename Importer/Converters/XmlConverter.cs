@@ -1,39 +1,91 @@
 using System;
-using System.Buffers;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+using System.Text.Json;
 
-using FASTER.core;
+using CommunityToolkit.HighPerformance.Buffers;
 
-using Importer.Utility;
+using Microsoft.Extensions.ObjectPool;
 
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using U8Xml;
 
 namespace Importer.Converters;
 
-public sealed partial class XmlConverter
+
+public sealed class XmlConverter : IResettable
 {
-    public static ReadOnlySpan<byte> PatchXmlData(ReadOnlySpan<byte> content)
+    private static readonly JsonWriterOptions JsonWriterOptions = new()
     {
-        TagLiterals literals = new();
-        int index = content.IndexOf("<Statistik>"u8);
-        if (index == -1)
-            index = 0;
-            
-        content = content.Slice(index);
+        SkipValidation = true,
+        Indented = false,
+    };
+    
+    private readonly ArrayPoolBufferWriter<byte> _buffer = new();
+    private readonly Utf8JsonWriter _writer;
 
-        if (content.IndexOf(literals.EndingTagWithoutNameSpace) == -1)
+    public XmlConverter()
+    {
+        _writer = new Utf8JsonWriter(_buffer, JsonWriterOptions);
+    }
+
+    public object WrittenMemory => _buffer.WrittenMemory;
+
+    public void ConvertToU8(ReadOnlySpan<byte> item)
+    {
+        using var parser = XmlParser.Parse(item);
+        
+        _writer.WriteStartObject();
+
+        XmlNode root = parser.Root;
+        WriteContent(ref root, _writer);
+
+        _writer.WriteEndObject();
+        _writer.Flush();
+    }
+
+    private void WriteContent(ref XmlNode content, Utf8JsonWriter writer)
+    {
+        writer.WriteStartObject(content.Name.AsSpan());
+        foreach (XmlNode childNode in content.Children)
         {
-            Span<byte> fixedXml = GC.AllocateUninitializedArray<byte>(content.Length + literals.EndingTagWithoutNameSpace.Length);
-
-            content.CopyTo(fixedXml);
-            literals.EndingTagWithoutNameSpace.CopyTo(fixedXml[content.Length..]);
-
-            return fixedXml;
+            XmlNode child = childNode;
+            RawString childNodeName = childNode.Name;
+            if (childNode.HasChildren)
+            {
+                if (childNodeName.EndsWith("Samling"u8) || childNodeName.EndsWith("Liste"u8))
+                {
+                    WriteArrayContent(ref child, writer);
+                }
+                else if (childNodeName.EndsWith("Struktur"u8))
+                {
+                    WriteContent(ref child, writer);
+                }
+            }
+            else
+            {
+                writer.WriteString(childNode.Name.AsSpan(), childNode.InnerText.AsSpan());
+            }
         }
+        writer.WriteEndObject();
+    }
+    
+    private void WriteArrayContent(ref XmlNode childNode, Utf8JsonWriter writer)
+    {
+        writer.WriteStartArray(childNode.Name.AsSpan());
+        foreach (var arrayNode in childNode.Children)
+        {
+            XmlNode content = arrayNode;
+            
+            writer.WriteStartObject();
+            WriteContent(ref content, writer);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+    }
 
-        return content;
+    public bool TryReset()
+    {
+        _buffer.Clear();
+        _writer.Reset();
+        
+        return true;
     }
 }
