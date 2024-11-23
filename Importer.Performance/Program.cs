@@ -14,6 +14,6 @@ long startTimeStamp = Stopwatch.GetTimestamp();
 
 Console.WriteLine("Starting Load of XML Data...");
 PerformanceReader reader = new PerformanceReader(log, CancellationToken.None);
-await reader.Read(file);
+long itemsParsed = await reader.Read(file);
 
-Console.WriteLine($"Finished of XML Data in {Stopwatch.GetElapsedTime(startTimeStamp)} seconds finding {0} Xml Documents");
+Console.WriteLine($"Finished of XML Data in {Stopwatch.GetElapsedTime(startTimeStamp)} seconds finding {itemsParsed} Xml Documents");

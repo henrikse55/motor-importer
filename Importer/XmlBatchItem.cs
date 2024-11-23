@@ -12,6 +12,8 @@ public sealed class XmlBatchItem : IResettable
 {
     private readonly ArrayPoolBufferWriter<int> _xmlItemSizes = new();
     private readonly ArrayPoolBufferWriter<byte> _buffer = new();
+    
+    public long GetWrittenCount() => _xmlItemSizes.WrittenCount;
 
     public IEnumerable<ReadOnlySequence<byte>> GetXmlItems()
     {

@@ -18,13 +18,14 @@ public abstract class ReaderBase
         new DefaultObjectPool<XmlBatchItem>(new DefaultPooledObjectPolicy<XmlBatchItem>());
 
     private readonly Channel<XmlBatchItem> _channel = Channel.CreateUnbounded<XmlBatchItem>();
+    private long _totalItems = 0;
 
     protected ReaderBase(CancellationToken cancellationToken)
     {
         _cancellationToken = cancellationToken;
     }
 
-    public async Task Read(Stream xmlStream)
+    public async Task<long> Read(Stream xmlStream)
     {
         Pipe pipe = new();
         Task write = FillPipe(pipe.Writer, xmlStream);
@@ -32,6 +33,8 @@ public abstract class ReaderBase
         Task present = PresentFromChannel();
             
         await Task.WhenAll(write, read, present).ConfigureAwait(false);
+
+        return _totalItems;
     }
 
     private async Task FillPipe(PipeWriter writer, Stream stream)
@@ -80,6 +83,7 @@ public abstract class ReaderBase
         }
         
         await reader.CompleteAsync().ConfigureAwait(false);
+        _channel.Writer.Complete();
     }
 
     private SequencePosition ScanForDelimiterBatch(ReadOnlySequence<byte> sequence, out XmlBatchItem batchItem)
@@ -98,6 +102,7 @@ public abstract class ReaderBase
     {
         await foreach(var item in _channel.Reader.ReadAllAsync(_cancellationToken).ConfigureAwait(false))
         {
+            _totalItems += item.GetWrittenCount();
             await PresentEntry(item).ConfigureAwait(false);
             _batchItemPool.Return(item);
         }

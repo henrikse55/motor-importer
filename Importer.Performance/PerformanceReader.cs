@@ -17,7 +17,7 @@ public sealed class PerformanceReader : ReaderBase
     private readonly FasterLog _log;
     private readonly Meter _meter = new("Motor.Performance");
     
-    private readonly ObservableCounter<long> _counter;
+    private readonly Counter<long> _counter;
     
     private readonly ObjectPool<ArrayPoolBufferWriter<byte>> arrayPoolBufferWriter =
         new DefaultObjectPool<ArrayPoolBufferWriter<byte>>(new DefaultPooledObjectPolicy<ArrayPoolBufferWriter<byte>>());
@@ -31,13 +31,14 @@ public sealed class PerformanceReader : ReaderBase
     public PerformanceReader(FasterLog log, CancellationToken cancellationToken) : base(cancellationToken)
     {
         _log = log;
-        _counter = _meter.CreateObservableCounter("Xml Entries", () => _jsonEntries, "docs");
+        _counter = _meter.CreateCounter<long>("Xml Entries");
     }
 
     /// <inheritdoc />
     protected override async Task PresentEntry(XmlBatchItem entry)
     {
         var xmlEntries = entry.GetXmlItems();
+        _counter.Add(entry.GetWrittenCount());
 
         await Parallel.ForEachAsync(xmlEntries, (sequence, token) =>
         {
@@ -60,8 +61,6 @@ public sealed class PerformanceReader : ReaderBase
             arrayPoolBufferWriter.Return(xmlBuffer);
             _converterPool.Return(converter);
             
-            Interlocked.Increment(ref _jsonEntries);
-
             return ValueTask.CompletedTask;
         });
     }
